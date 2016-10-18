@@ -12,9 +12,34 @@ MINUS_INFINITY_SENTENCE_LOG_PROB = -1000
 # training_corpus: is a list of the sentences. Each sentence is a string with tokens separated by spaces, ending in a newline character.
 # This function outputs three python dictionaries, where the keys are tuples expressing the ngram and the value is the log probability of that ngram
 def calc_probabilities(training_corpus):
-    unigram_p = {}
-    bigram_p = {}
-    trigram_p = {}
+    
+    unigram_tuples = []
+    bigram_tuples = []
+    trigram_tuples = []
+    print("Processing sentences")
+    import sys
+    for sentence in training_corpus:
+        tokens = nltk.word_tokenize(sentence)
+        tokens.insert(0, START_SYMBOL)
+        tokens.append(STOP_SYMBOL)
+        
+        unigram_tuples.extend(list([(x,) for x in tokens]))
+        bigram_tuples.extend(list(nltk.bigrams(tokens)))
+        trigram_tuples.extend(list(nltk.trigrams(tokens)))
+        #sys.stdout.write('.')
+        #sys.stdout.flush()
+
+    ucount = float(len(unigram_tuples))
+    bcount = float(len(bigram_tuples))
+    tcount = float(len(trigram_tuples))
+
+    print("Processing unigrams")
+    unigram_p = {item : math.log(unigram_tuples.count(item)/ucount,2) for item in set(unigram_tuples)}
+    print("Processing bigrams")
+    bigram_p =  {item : math.log(bigram_tuples.count(item)/bcount,2) for item in set(bigram_tuples)}
+    print("Processing trigrams")
+    trigram_p = {item : math.log(trigram_tuples.count(item)/tcount,2) for item in set(trigram_tuples)}
+
     return unigram_p, bigram_p, trigram_p
 
 # Prints the output for q1
