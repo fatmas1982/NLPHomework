@@ -24,7 +24,7 @@ def log2(num):
     return math.log(num,2)
 
 def calc_prob(ngrams):
-    total = float(len(ngrams))
+    total = float(len(ngrams)) - ngrams.count(START_SYMBOL)
     counts = {}
     
     for token in ngrams:
@@ -56,14 +56,12 @@ def calc_probabilities(training_corpus):
         tokens.insert(0, START_SYMBOL)
         tokens.append(STOP_SYMBOL)
         
+        print tokens
+        
         unigram_tuples.extend(list([(x,) for x in tokens]))
         bigram_tuples.extend(list(nltk.bigrams(tokens)))
         trigram_tuples.extend(list(nltk.trigrams(tokens)))
         Pd.printdot()
-
-    ucount = float(len(unigram_tuples))
-    bcount = float(len(bigram_tuples))
-    tcount = float(len(trigram_tuples))
 
     print("\nProcessing unigrams")
     #unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
