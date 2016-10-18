@@ -87,17 +87,17 @@ def q1_output(unigrams, bigrams, trigrams, filename):
     outfile = open(filename, 'w')
 
     unigrams_keys = unigrams.keys()
-    unigrams_keys.sort()
+    sorted(unigrams_keys)
     for unigram in unigrams_keys:
         outfile.write('UNIGRAM ' + unigram[0] + ' ' + str(unigrams[unigram]) + '\n')
 
     bigrams_keys = bigrams.keys()
-    bigrams_keys.sort()
+    sorted(bigrams_keys)
     for bigram in bigrams_keys:
         outfile.write('BIGRAM ' + bigram[0] + ' ' + bigram[1]  + ' ' + str(bigrams[bigram]) + '\n')
 
     trigrams_keys = trigrams.keys()
-    trigrams_keys.sort()    
+    sorted(trigrams_keys)    
     for trigram in trigrams_keys:
         outfile.write('TRIGRAM ' + trigram[0] + ' ' + trigram[1] + ' ' + trigram[2] + ' ' + str(trigrams[trigram]) + '\n')
 
