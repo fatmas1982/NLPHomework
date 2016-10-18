@@ -56,8 +56,6 @@ def calc_probabilities(training_corpus):
         tokens.insert(0, START_SYMBOL)
         tokens.append(STOP_SYMBOL)
         
-        print tokens
-        
         unigram_tuples.extend(list([(x,) for x in tokens]))
         bigram_tuples.extend(list(nltk.bigrams(tokens)))
         trigram_tuples.extend(list(nltk.trigrams(tokens)))
