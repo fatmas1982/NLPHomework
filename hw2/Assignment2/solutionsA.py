@@ -1,11 +1,28 @@
 import math
 import nltk
 import time
+import sys
 
 # Constants to be used by you when you fill the functions
 START_SYMBOL = '*'
 STOP_SYMBOL = 'STOP'
 MINUS_INFINITY_SENTENCE_LOG_PROB = -1000
+
+class Pd():
+    counter = 0
+    
+    @staticmethod
+    def printdot():
+        if Pd.counter % 1000 == 0:
+            sys.stdout.write('.')
+            sys.stdout.flush()
+        Pd.counter += 1
+
+
+def log2(num):
+    Pd.printdot()
+    return math.log(num,2)
+
 
 # TODO: IMPLEMENT THIS FUNCTION
 # Calculates unigram, bigram, and trigram probabilities given a training corpus
@@ -13,11 +30,12 @@ MINUS_INFINITY_SENTENCE_LOG_PROB = -1000
 # This function outputs three python dictionaries, where the keys are tuples expressing the ngram and the value is the log probability of that ngram
 def calc_probabilities(training_corpus):
     
+    counter = 0
+    
     unigram_tuples = []
     bigram_tuples = []
     trigram_tuples = []
     print("Processing sentences")
-    import sys
     for sentence in training_corpus:
         tokens = nltk.word_tokenize(sentence)
         tokens.insert(0, START_SYMBOL)
@@ -26,19 +44,18 @@ def calc_probabilities(training_corpus):
         unigram_tuples.extend(list([(x,) for x in tokens]))
         bigram_tuples.extend(list(nltk.bigrams(tokens)))
         trigram_tuples.extend(list(nltk.trigrams(tokens)))
-        #sys.stdout.write('.')
-        #sys.stdout.flush()
+        Pd.printdot()
 
     ucount = float(len(unigram_tuples))
     bcount = float(len(bigram_tuples))
     tcount = float(len(trigram_tuples))
 
-    print("Processing unigrams")
-    unigram_p = {item : math.log(unigram_tuples.count(item)/ucount,2) for item in set(unigram_tuples)}
-    print("Processing bigrams")
-    bigram_p =  {item : math.log(bigram_tuples.count(item)/bcount,2) for item in set(bigram_tuples)}
-    print("Processing trigrams")
-    trigram_p = {item : math.log(trigram_tuples.count(item)/tcount,2) for item in set(trigram_tuples)}
+    print("\nProcessing unigrams")
+    unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
+    print("\nProcessing bigrams")
+    bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
+    print("\nProcessing trigrams")
+    trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
 
     return unigram_p, bigram_p, trigram_p
 
@@ -145,6 +162,6 @@ def main():
     score_output(sample2scores, OUTPUT_PATH + 'Sample2_scored.txt')
 
     # print total time to run Part A
-    print "Part A time: " + str(time.clock()) + ' sec'
+    print("Part A time: " + str(time.clock()) + ' sec')
 
 if __name__ == "__main__": main()
