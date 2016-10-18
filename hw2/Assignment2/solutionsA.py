@@ -34,9 +34,8 @@ def calc_prob(ngrams):
         
     print("\nCalculating log probabilities")
     for key in counts.keys():
-        counts[key] /= total
-        Pd.printdot()
-        
+        log2(counts[key] /= total)
+
     return counts
         
 
