@@ -24,8 +24,9 @@ def log2(num):
     return math.log(num,2)
 
 def calc_prob(ngrams):
-    total = float(len(ngrams)) - ngrams.count(START_SYMBOL)
+    total = float(len(ngrams)) - ngrams.count((START_SYMBOL,)) #- ngrams.count((STOP_SYMBOL,))
     counts = {}
+    logs = {}
     
     for token in ngrams:
         x = counts.get(token, 0)
@@ -34,9 +35,33 @@ def calc_prob(ngrams):
         
     print("\nCalculating log probabilities")
     for key in counts.keys():
-        counts[key] = log2(counts[key]/total)
+        logs[key] = log2(counts[key]/total)
 
-    return counts
+    return logs, counts
+
+def calc_prob_bi(bgrams, ugrams):
+    counts = {}
+    logs = {}
+    
+    for token in bgrams:
+        x = counts.get(token, 0)
+        counts[token] = x + 1
+        Pd.printdot()
+        
+    print("\nCalculating log probabilities")
+    for key in counts.keys():
+        subkey = key[:-1]
+        try:
+            logs[key] = log2(float(counts[key])/ugrams[subkey])
+        except:
+            print("Damnit, it broke...")
+            print(key)
+            print(counts[key])
+            print(subkey)
+            print(ugrams[subkey])
+            
+
+    return logs, counts
         
 
 # TODO: IMPLEMENT THIS FUNCTION
@@ -63,15 +88,15 @@ def calc_probabilities(training_corpus):
 
     print("\nProcessing unigrams")
     #unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
-    unigram_p = calc_prob(unigram_tuples)
+    unigram_p, unigram_counts = calc_prob(unigram_tuples)
     
     print("\nProcessing bigrams")
     #bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
-    bigram_p = calc_prob(bigram_tuples)
+    bigram_p, bigram_counts = calc_prob_bi(bigram_tuples, unigram_counts)
     
     print("\nProcessing trigrams")
     #trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
-    trigram_p = calc_prob(trigram_tuples)
+    trigram_p, trigram_counts = calc_prob_bi(trigram_tuples, bigram_counts)
 
     return unigram_p, bigram_p, trigram_p
 
