@@ -13,7 +13,7 @@ class Pd():
     
     @staticmethod
     def printdot():
-        if Pd.counter % 1000 == 0:
+        if Pd.counter % 5000 == 0:
             sys.stdout.write('.')
             sys.stdout.flush()
         Pd.counter += 1
@@ -23,6 +23,22 @@ def log2(num):
     Pd.printdot()
     return math.log(num,2)
 
+def calc_prob(ngrams):
+    total = float(len(ngrams))
+    counts = {}
+    
+    for token in ngrams:
+        x = counts.get(token, 0)
+        counts[token] = x + 1
+        Pd.printdot()
+        
+    print("\nCalculating log probabilities")
+    for key in counts.keys():
+        counts[key] /= total
+        Pd.printdot()
+        
+    return counts
+        
 
 # TODO: IMPLEMENT THIS FUNCTION
 # Calculates unigram, bigram, and trigram probabilities given a training corpus
@@ -37,7 +53,7 @@ def calc_probabilities(training_corpus):
     trigram_tuples = []
     print("Processing sentences")
     for sentence in training_corpus:
-        tokens = nltk.word_tokenize(sentence)
+        tokens = sentence.split()
         tokens.insert(0, START_SYMBOL)
         tokens.append(STOP_SYMBOL)
         
@@ -51,11 +67,16 @@ def calc_probabilities(training_corpus):
     tcount = float(len(trigram_tuples))
 
     print("\nProcessing unigrams")
-    unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
+    #unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
+    unigram_p = calc_prob(unigram_tuples)
+    
     print("\nProcessing bigrams")
-    bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
+    #bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
+    bigram_p = calc_prob(bigram_tuples)
+    
     print("\nProcessing trigrams")
-    trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
+    #trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
+    trigram_p = calc_prob(trigram_tuples)
 
     return unigram_p, bigram_p, trigram_p
 
