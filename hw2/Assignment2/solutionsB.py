@@ -14,8 +14,8 @@ class Pd():
     counter = 0
     
     @staticmethod
-    def printdot():
-        if Pd.counter % 5000 == 0:
+    def printdot(freq = 5000):
+        if Pd.counter % freq == 0:
             sys.stdout.write('.')
             sys.stdout.flush()
         Pd.counter += 1
@@ -265,7 +265,7 @@ def viterbi(brown_dev_words, taglist, known_words, q_values, e_values):
         replaced.append(STOP_SYMBOL)
         
         for i in range(2, len(replaced)):
-            
+            Pd.printdot() #monitor progress
             v.append({})
             backpointers.append({})
             #a = {}
@@ -359,14 +359,32 @@ def q5_output(tagged, filename):
 # terminal newline, not a list of tokens. 
 def nltk_tagger(brown_words, brown_tags, brown_dev_words):
     # Hint: use the following line to format data to what NLTK expects for training
-    training = [ zip(brown_words[i],brown_tags[i]) for i in xrange(len(brown_words)) ]
+    #training = [ zip(brown_words[i],brown_tags[i]) for i in xrange(len(brown_words)) ]
+    training = []
+    for i in xrange(len(brown_words)):
+        words = [unicode(x, 'utf-8') for x in brown_words[i]]
+        tags = [unicode(x, 'utf-8') for x in brown_tags[i]]
+        training.append(zip(words, tags))
 
-    # IMPLEMENT THE REST OF THE FUNCTION HERE
-    default_tagger = nltk.DefaultTagger('NN')
+    print(training[0])
+    #input("continue...")
+
+    # IMPLEMENT THE REST OF THE FUNCTION HERE 
+    print("\nIn NLTK tagger code")
+    default_tagger = nltk.DefaultTagger('NOUN')
     bigram_tagger = nltk.BigramTagger(training, backoff=default_tagger)
     trigram_tagger = nltk.TrigramTagger(training, backoff=bigram_tagger)
 
-    tagged = trigram_tagger.tag()
+    tagged = []
+    for sentence in brown_dev_words:
+        tagged_tuples = trigram_tagger.tag(sentence)
+        tagged_sentence = ""
+        for word_tag in tagged_tuples:
+            tagged_sentence += word_tag[0] + "/" + word_tag[1] + " "
+        tagged_sentence += "\n"
+        tagged.append(tagged_sentence)
+        Pd.printdot(1000) #monitor progress
+        
     return tagged
 
 # This function takes the output of nltk_tagger() and outputs it to file
