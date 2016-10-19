@@ -243,7 +243,105 @@ def q4_output(e_values, filename):
 # terminal newline, not a list of tokens. Remember also that the output should not contain the "_RARE_" symbol, but rather the
 # original words of the sentence!
 def viterbi(brown_dev_words, taglist, known_words, q_values, e_values):
+    
+    first = True
     tagged = []
+    for sentence in brown_dev_words:
+        
+        state_probs = [{START_SYMBOL: 0}, {START_SYMBOL: 0}]
+        trans_probs = [{},{}]
+        v = [{START_SYMBOL: 0.0}, {START_SYMBOL: 0.0}]
+        backpointers = [{START_SYMBOL: START_SYMBOL}, {START_SYMBOL: START_SYMBOL}]
+        
+        replaced = []
+        for word in sentence:
+            if word in known_words:
+                replaced.append(word)
+            else:
+                replaced.append(RARE_SYMBOL)
+        
+        replaced.insert(0, START_SYMBOL)
+        replaced.insert(0, START_SYMBOL)
+        replaced.append(STOP_SYMBOL)
+        
+        for i in range(2, len(replaced)):
+            
+            v.append({})
+            backpointers.append({})
+            #a = {}
+            b = {}
+            
+            word = replaced[i]
+            for tag in taglist:
+                if (word, tag) in e_values:
+                    b[tag] = e_values[(word, tag)]
+            
+            for tag in b.keys():
+                v[i][tag] = float("-inf")
+                trans_count = 0
+                for t1 in state_probs[i - 2]:
+                    for t2 in state_probs[i - 1]:
+                        transition = (t1, t2, tag)
+                        if transition in q_values:
+                            #a[transition] = q_values[transition]
+                            trans_count += 1
+                            #do argmax
+                            vprime = v[i-1][t2] + q_values[transition] + b[tag]
+                            if vprime > v[i][tag]:
+                                v[i][tag] = vprime
+                                backpointers[i][tag] = t2
+                                
+                #if transition count was 0, fake it
+                if trans_count == 0:
+                    for t2 in state_probs[i - 1]:
+                        vprime = v[i-1][t2] + LOG_PROB_OF_ZERO + b[tag]
+                        if vprime > v[i][tag]:
+                            v[i][tag] = vprime
+                            backpointers[i][tag] = t2
+                            
+            #trans_probs.append(a)
+            state_probs.append(b)
+        
+        #now to do backtracking
+        bchain = []
+        nextpos = STOP_SYMBOL
+        index = 0
+        try:
+            for i in range(len(backpointers)-1, 2, -1):
+                pos = backpointers[i][nextpos]
+                nextpos = pos
+                bchain.append(pos)
+                index = i
+        except:
+            print("Oh hell it broke...")
+            print(sentence)
+            print(backpointers)
+            print(v)
+            print(bchain)
+            print(index)
+            input("Press Enter to continue...")
+            
+        
+        bchain.reverse()
+        #bchain = bchain[2:-2]
+        
+                
+        if first:
+            print(replaced)
+            print(sentence)
+            print(bchain)
+            #for i in range(len(state_probs)):
+                #print(replaced[i] + ": " + str(backpointers[i]))
+                
+            first = False
+            
+        tagged_sentence = ""
+        for i in range(len(sentence)):
+            tagged_sentence += sentence[i] + "/" + bchain[i] + " "
+        tagged_sentence += "\n"
+        
+        tagged.append(tagged_sentence)
+   
     return tagged
 
 # This function takes the output of viterbi() and outputs it to file
@@ -264,7 +362,11 @@ def nltk_tagger(brown_words, brown_tags, brown_dev_words):
     training = [ zip(brown_words[i],brown_tags[i]) for i in xrange(len(brown_words)) ]
 
     # IMPLEMENT THE REST OF THE FUNCTION HERE
-    tagged = []
+    default_tagger = nltk.DefaultTagger('NN')
+    bigram_tagger = nltk.BigramTagger(training, backoff=default_tagger)
+    trigram_tagger = nltk.TrigramTagger(training, backoff=bigram_tagger)
+
+    tagged = trigram_tagger.tag()
     return tagged
 
 # This function takes the output of nltk_tagger() and outputs it to file
