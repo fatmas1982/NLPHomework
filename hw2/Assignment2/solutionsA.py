@@ -62,7 +62,13 @@ def calc_prob_bi(bgrams, ugrams):
             
 
     return logs, counts
-        
+
+
+def make_tok(sentence):
+    tokens = sentence.split()
+    tokens.insert(0, START_SYMBOL)
+    tokens.append(STOP_SYMBOL)
+    return tokens
 
 # TODO: IMPLEMENT THIS FUNCTION
 # Calculates unigram, bigram, and trigram probabilities given a training corpus
@@ -77,22 +83,26 @@ def calc_probabilities(training_corpus):
     trigram_tuples = []
     print("Processing sentences")
     for sentence in training_corpus:
-        tokens = sentence.split()
-        tokens.insert(0, START_SYMBOL)
-        tokens.append(STOP_SYMBOL)
-        
-        unigram_tuples.extend(list([(x,) for x in tokens]))
-        bigram_tuples.extend(list(nltk.bigrams(tokens)))
-        trigram_tuples.extend(list(nltk.trigrams(tokens)))
+#        tokens = make_tok(sentence)
+#        unigram_tuples.extend(list([(x,) for x in tokens]))
+#        bigram_tuples.extend(list(nltk.bigrams(tokens)))
+#        trigram_tuples.extend(list(nltk.trigrams(tokens)))
+        unigram_tuples.extend(make_ngrams(sentence, 1))
+        bigram_tuples.extend(make_ngrams(sentence, 2))
+        trigram_tuples.extend(make_ngrams(sentence, 3))
+
+
         Pd.printdot()
 
     print("\nProcessing unigrams")
     #unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
     unigram_p, unigram_counts = calc_prob(unigram_tuples)
+    unigram_counts[(START_SYMBOL,)] = len(training_corpus) 
     
     print("\nProcessing bigrams")
     #bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
     bigram_p, bigram_counts = calc_prob_bi(bigram_tuples, unigram_counts)
+    bigram_counts[(START_SYMBOL,START_SYMBOL)] = len(training_corpus) 
     
     print("\nProcessing trigrams")
     #trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
@@ -131,8 +141,33 @@ def q1_output(unigrams, bigrams, trigrams, filename):
 # corpus: list of sentences to score. Each sentence is a string with tokens separated by spaces, ending in a newline character.
 # This function must return a python list of scores, where the first element is the score of the first sentence, etc. 
 def score(ngram_p, n, corpus):
+    
     scores = []
+    
+    for sentence in corpus:
+        ngrams = make_ngrams(sentence, n)
+        score = sum([ ngram_p.get(x, -1000) for x in ngrams])
+        scores.append(max(score, -1000))
+        
     return scores
+
+def make_ngrams(sentence, n):
+    
+    tokens = sentence.split()
+    tokens.append(STOP_SYMBOL)
+    
+    grams = []
+    if n == 1:
+        grams = list([(x,) for x in tokens])
+    elif n == 2:
+        tokens.insert(0, START_SYMBOL)
+        grams = list(nltk.bigrams(tokens))
+    elif n == 3:
+        tokens.insert(0, START_SYMBOL)
+        tokens.insert(0, START_SYMBOL)
+        grams = list(nltk.trigrams(tokens))  
+    
+    return grams
 
 # Outputs a score to a file
 # scores: list of scores
