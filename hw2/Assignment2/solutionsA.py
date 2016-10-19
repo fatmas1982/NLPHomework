@@ -83,29 +83,20 @@ def calc_probabilities(training_corpus):
     trigram_tuples = []
     print("Processing sentences")
     for sentence in training_corpus:
-#        tokens = make_tok(sentence)
-#        unigram_tuples.extend(list([(x,) for x in tokens]))
-#        bigram_tuples.extend(list(nltk.bigrams(tokens)))
-#        trigram_tuples.extend(list(nltk.trigrams(tokens)))
         unigram_tuples.extend(make_ngrams(sentence, 1))
         bigram_tuples.extend(make_ngrams(sentence, 2))
         trigram_tuples.extend(make_ngrams(sentence, 3))
-
-
         Pd.printdot()
 
     print("\nProcessing unigrams")
-    #unigram_p = {item : log2(unigram_tuples.count(item)/ucount) for item in set(unigram_tuples)}
     unigram_p, unigram_counts = calc_prob(unigram_tuples)
     unigram_counts[(START_SYMBOL,)] = len(training_corpus) 
     
     print("\nProcessing bigrams")
-    #bigram_p =  {item : log2(bigram_tuples.count(item)/bcount) for item in set(bigram_tuples)}
     bigram_p, bigram_counts = calc_prob_bi(bigram_tuples, unigram_counts)
     bigram_counts[(START_SYMBOL,START_SYMBOL)] = len(training_corpus) 
     
     print("\nProcessing trigrams")
-    #trigram_p = {item : log2(trigram_tuples.count(item)/tcount) for item in set(trigram_tuples)}
     trigram_p, trigram_counts = calc_prob_bi(trigram_tuples, bigram_counts)
 
     return unigram_p, bigram_p, trigram_p
@@ -184,7 +175,20 @@ def score_output(scores, filename):
 # Like score(), this function returns a python list of scores
 def linearscore(unigrams, bigrams, trigrams, corpus):
     scores = []
-    return scores
+    li_prob = {}
+    print("Calculating interpolated score")
+    
+    for key in trigrams.keys():
+        triprob = math.pow(2, trigrams[key])
+        sk1 = key[1:]
+        biprob = 0.0 if sk1 == (START_SYMBOL,START_SYMBOL) else math.pow(2, bigrams[sk1])
+        sk2 = sk1[1:]
+        uniprob = 0.0 if sk2 == (START_SYMBOL,) else math.pow(2, unigrams[sk2])
+        li_prob[key] = log2(triprob/3 + biprob/3 + uniprob/3)
+    
+    return score(li_prob, 3, corpus)
+
+
 
 DATA_PATH = 'data/'
 OUTPUT_PATH = 'output/'
