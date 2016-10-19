@@ -2,12 +2,27 @@ import sys
 import nltk
 import math
 import time
+import re
 
 START_SYMBOL = '*'
 STOP_SYMBOL = 'STOP'
 RARE_SYMBOL = '_RARE_'
 RARE_WORD_MAX_FREQ = 5
 LOG_PROB_OF_ZERO = -1000
+
+class Pd():
+    counter = 0
+    
+    @staticmethod
+    def printdot():
+        if Pd.counter % 5000 == 0:
+            sys.stdout.write('.')
+            sys.stdout.flush()
+        Pd.counter += 1
+
+def log2(num):
+    Pd.printdot()
+    return math.log(num,2)
 
 
 # TODO: IMPLEMENT THIS FUNCTION
@@ -19,6 +34,29 @@ LOG_PROB_OF_ZERO = -1000
 def split_wordtags(brown_train):
     brown_words = []
     brown_tags = []
+    #first = True  
+    
+    for sentence in brown_train:
+        words = []
+        tags = []
+        words.append(START_SYMBOL)
+        tags.append(START_SYMBOL)
+        words.append(START_SYMBOL)
+        tags.append(START_SYMBOL)
+        for str in sentence.split():
+            m = re.search("^(.+)[/]([^/]+)$", str)
+            words.append(m.group(1))
+            tags.append(m.group(2))
+        words.append(STOP_SYMBOL)
+        tags.append(STOP_SYMBOL)
+        
+        #if first:
+        #    print(words)
+        #    first = False
+        
+        brown_words.append(words)
+        brown_tags.append(tags)
+
     return brown_words, brown_tags
 
 
@@ -26,8 +64,44 @@ def split_wordtags(brown_train):
 # This function takes tags from the training data and calculates tag trigram probabilities.
 # It returns a python dictionary where the keys are tuples that represent the tag trigram, and the values are the log probability of that trigram
 def calc_trigrams(brown_tags):
-    q_values = {}
-    return q_values
+    tcounts = {}
+    bcounts = {}
+    logs = {}
+    tgrams = []
+    bgrams = []
+    logs = {}
+    
+    for tokens in brown_tags:
+        bgrams.extend(list(nltk.bigrams(tokens)))
+        #tokens.insert(0, START_SYMBOL) 
+        tgrams.extend(list(nltk.trigrams(tokens)))
+        
+    
+    print("\nCalculating ngram counts")    
+    for token in tgrams:
+        x = tcounts.get(token, 0)
+        tcounts[token] = x + 1
+        Pd.printdot()
+
+    for token in bgrams:
+        x = bcounts.get(token, 0)
+        bcounts[token] = x + 1
+        Pd.printdot()        
+    #bcounts[(START_SYMBOL, START_SYMBOL)] = len(brown_tags) 
+        
+    print("\nCalculating log probabilities")
+    for key in tcounts.keys():
+        subkey = key[:-1]
+        try:
+            logs[key] = log2(float(tcounts[key])/bcounts[subkey])
+        except:
+            print("Damnit, it broke...")
+            print(key)
+            print(tcounts[key])
+            print(subkey)
+            print(bcounts[subkey])
+            
+    return logs
 
 # This function takes output from calc_trigrams() and outputs it in the proper format
 def q2_output(q_values, filename):
@@ -46,6 +120,19 @@ def q2_output(q_values, filename):
 # Note: words that appear exactly 5 times should be considered rare!
 def calc_known(brown_words):
     known_words = set([])
+    
+    counts = {}
+    print("\nCalculating known words")
+    for words in brown_words:
+        for token in words:
+            x = counts.get(token, 0)
+            counts[token] = x + 1
+            Pd.printdot()
+    
+    for key in counts.keys():
+        if counts[key] > RARE_WORD_MAX_FREQ:
+            known_words.add(key)
+    
     return known_words
 
 # TODO: IMPLEMENT THIS FUNCTION
@@ -53,6 +140,23 @@ def calc_known(brown_words):
 # Returns the equivalent to brown_words but replacing the unknown words by '_RARE_' (use RARE_SYMBOL constant)
 def replace_rare(brown_words, known_words):
     brown_words_rare = []
+    
+    #first = True
+    
+    print("\nReplacing words")
+    for words in brown_words:
+        new_words = []
+        #if first:
+        #    print(words)
+        #    first = False
+        for token in words:
+            if token in known_words:
+                new_words.append(token)
+            else:
+                new_words.append(RARE_SYMBOL)
+            Pd.printdot()
+        brown_words_rare.append(new_words)
+    
     return brown_words_rare
 
 # This function takes the ouput from replace_rare and outputs it to a file
@@ -71,6 +175,48 @@ def q3_output(rare, filename):
 def calc_emission(brown_words_rare, brown_tags):
     e_values = {}
     taglist = set([])
+    
+    for tokens in brown_tags:
+        for tag in tokens:
+            taglist.add(tag)
+    
+    #print taglist
+    print("\nCalculating emission probabilities")
+    
+    #group words by tag
+    tag_words = {}
+    for tag in taglist:
+        tag_words[tag] = []
+        
+    #this is messy with indexes but whatever...
+    for i in range(len(brown_words_rare)):
+        words = brown_words_rare[i]
+        for j in range(len(words)):
+            tag = brown_tags[i][j]
+            word = brown_words_rare[i][j]
+            tag_words[tag].append(word)
+            Pd.printdot()
+    
+    tw_tuple_counts = {}
+    #get word counts by tag
+    for tag in tag_words.keys():
+        words = tag_words[tag]
+        for word in words:
+            tw_tuple = (word, tag)
+            x = tw_tuple_counts.get(tw_tuple, 0)
+            tw_tuple_counts[tw_tuple] = x + 1
+            Pd.printdot()
+    
+    #calculate divisor for each tag (dict comprehention blew up...)
+    tw_word_counts = {}
+    for tag in tag_words.keys():
+        tw_word_counts[tag] = len(tag_words[tag])
+        Pd.printdot()
+    
+    #get log probs of words by tag 
+    for tw_tuple in tw_tuple_counts.keys():
+        e_values[tw_tuple] = log2(float(tw_tuple_counts[tw_tuple]) / tw_word_counts[tw_tuple[1]])
+    
     return e_values, taglist
 
 # This function takes the output from calc_emissions() and outputs it
