@@ -21,6 +21,17 @@ def build_s(data):
         }
 
     '''
+    first = 0
+    for d in data:
+        if first < 1:
+            index = 0
+            for w in data[d][0]:
+                print(str(index) + ": " + w + "\n")
+                first += 1
+                index += 1 
+        else:
+            exit()
+    
     s = {}
 
     # implement your code here
