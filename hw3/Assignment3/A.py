@@ -166,7 +166,7 @@ def print_results(results ,output_file):
                 #print(inst_tuples)
                 lexelt = main.replace_accented(key)
                 instance_id = main.replace_accented(inst_tuples[0])
-                label = main.replace_accented(inst_tuples[1])
+                label = inst_tuples[1]
                 outfile.write( lexelt + ' ' + instance_id +  ' ' + label + '\n')
 
 
