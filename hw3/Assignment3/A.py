@@ -4,13 +4,51 @@ from sklearn import neighbors
 import nltk
 import re, string
 import sys
+from nltk.data import load
 
 # don't change the window size
 window_size = 10
 pattern = re.compile('')
 
+def get_stemmed_window(before, after, language):
+    
+    #http://stackoverflow.com/a/32469562/5606218
+    from nltk.corpus import stopwords
+    from nltk.tokenize import wordpunct_tokenize
+    from nltk.stem.porter import PorterStemmer
+    from nltk.stem import SnowballStemmer
+    
+    if language == 'english':
+        stemmer = PorterStemmer()
+    elif language == 'spanish':
+        stemmer = SnowballStemmer("spanish")
+    else:
+        return [],[]
+    
+    stop_words = set(stopwords.words(language))
+    stop_words.update(['.', ',', '"', "'", '?', '!', ':', ';', '(', ')', '[', ']', '{', '}']) # remove it if you need punctuation 
+    
+    before = [stemmer.stem(i.lower()) for i in wordpunct_tokenize(before) if i.lower() not in stop_words][-window_size:]
+    after = [stemmer.stem(i.lower()) for i in wordpunct_tokenize(after) if i.lower() not in stop_words][:window_size]
+    
+    return before, after
+
+def get_plain_window(before, after):
+    b = nltk.word_tokenize(before)[-window_size:]
+    a = nltk.word_tokenize(after)[:window_size]
+    return b, a
+
+def get_POS_window(bp, word, ap):
+        pos_tokens = nltk.pos_tag(ap + word + bp)
+        offset = len(bp)
+        
+        bpos = pos_tokens[offset - window_size : offset]
+        apos = pos_tokens[offset + 2 : offset + 2 + window_size]
+        
+        return [wtype for w, wtype in apos], [wtype for w, wtype in bpos]
+
 # A.1
-def build_s(data):
+def build_s(data, language):
     '''
     Compute the context vector for each lexelt
     :param data: dic with the following structure:
@@ -26,7 +64,7 @@ def build_s(data):
 
     '''
     #sys.stdout.write('#')
-    
+
     s = {}
     first = True
     for d in data:
@@ -34,9 +72,10 @@ def build_s(data):
         s[d] = []
         for i in range(len(data[d])):
             lexelt = data[d][i]
-            s[d] += nltk.word_tokenize(pattern.sub('', lexelt[1]))[-window_size:]
-            s[d] += nltk.word_tokenize(pattern.sub('', lexelt[3]))[:window_size]
-        
+            astem, bstem = get_stemmed_window(lexelt[1], lexelt[3], language)
+            ap, bp = get_plain_window(lexelt[1], lexelt[3])
+            s[d] += astem + bstem + ap + bp
+            
         s[d] = set(s[d])
         """
         if first:
@@ -66,7 +105,7 @@ def build_s(data):
 
 
 # A.1
-def vectorize(data, s):
+def vectorize(data, s, language):
     '''
     :param data: list of instances for a given lexelt with the following structure:
         {
@@ -90,11 +129,21 @@ def vectorize(data, s):
     for instance in data:
         instance_id = instance[0]
         labels[instance_id] = instance[4]
-        words = []
-        words += nltk.word_tokenize(pattern.sub('', instance[1]))[-window_size:]
-        words += nltk.word_tokenize(pattern.sub('', instance[3]))[:window_size]
+        astem, bstem = get_stemmed_window(instance[1], instance[3], language)
+        ap, bp = get_plain_window(instance[1], instance[3])
+        words = astem + bstem + ap + bp
+        #words = []
+        #words += nltk.word_tokenize(pattern.sub('', instance[1]))[-window_size:]
+        #words += nltk.word_tokenize(pattern.sub('', instance[3]))[:window_size]
         
         vectors[instance_id] = [words.count(x) for x in s]
+        
+        if language == 'english':
+            tags =  load('help/tagsets/upenn_tagset.pickle').keys()
+            bpos, apos = get_POS_window(bp,[instance[2]],ap)
+            vectors[instance_id] += [bpos.count(x) for x in tags]
+            vectors[instance_id] += [apos.count(x) for x in tags]
+        
 
     return vectors, labels
 
@@ -175,12 +224,12 @@ def print_results(results ,output_file):
 
 # run part A
 def run(train, test, language, knn_file, svm_file):
-    s = build_s(train)
+    s = build_s(train, language)
     svm_results = {}
     knn_results = {}
     for lexelt in s:
-        X_train, y_train = vectorize(train[lexelt], s[lexelt])
-        X_test, _ = vectorize(test[lexelt], s[lexelt])
+        X_train, y_train = vectorize(train[lexelt], s[lexelt], language)
+        X_test, _ = vectorize(test[lexelt], s[lexelt], language)
         svm_results[lexelt], knn_results[lexelt] = classify(X_train, X_test, y_train)
 
     print_results(svm_results, svm_file)
