@@ -1,6 +1,7 @@
 from main import replace_accented
 from sklearn import svm
 from sklearn import neighbors
+import nltk
 
 # don't change the window size
 window_size = 10
@@ -21,18 +22,37 @@ def build_s(data):
         }
 
     '''
-    first = 0
+    s = {}
+    first = True
     for d in data:
+        #print d
+        s[d] = []
+        for i in range(len(data[d])):
+            lexelt = data[d][i]
+            s[d] += nltk.word_tokenize(lexelt[1])[-window_size:]
+            s[d] += nltk.word_tokenize(lexelt[3])[:window_size]
+        
+        """
+        if first:
+            print s[d]
+            first = False
+            
+        
         if first < 1:
             index = 0
             for w in data[d][0]:
                 print(str(index) + ": " + w + "\n")
                 first += 1
                 index += 1 
+            before = nltk.word_tokenize(data[d][0][1])[-window_size:]
+            after = nltk.word_tokenize(data[d][0][3])[:window_size]
+            print("Before: " + str(before))
+            print("After: " + str(after)) 
         else:
             exit()
+        """
     
-    s = {}
+    
 
     # implement your code here
 
@@ -59,6 +79,20 @@ def vectorize(data, s):
     labels = {}
 
     # implement your code here
+    for instance in data:
+        instance_id = instance[0]
+        labels[instance_id] = instance[4]
+        words = []
+        before = nltk.word_tokenize(instance[1])[-window_size:]
+        after = nltk.word_tokenize(instance[3])[:window_size]
+        
+        words += [''] * (window_size - len(before)) + before
+        words += after + [''] * (window_size - len(after))
+        
+        if(len(words) != 20):
+            print(words)
+        
+        vectors[instance_id] = [s.count(x) for x in words]
 
     return vectors, labels
 
@@ -92,10 +126,20 @@ def classify(X_train, X_test, y_train):
     knn_clf = neighbors.KNeighborsClassifier()
 
     # implement your code here
+    svm_clf.fit(X_train.values(), y_train.values())
+    knn_clf.fit(X_train.values(), y_train.values())
 
+    svm_results = zip(X_test.keys(), svm_clf.predict(X_test.values()))
+    knn_results = zip(X_test.keys(), knn_clf.predict(X_test.values()))
+    
+    #print(svm_results[0])
+    #print(knn_results[0])
+    
     return svm_results, knn_results
 
 # A.3, A.4 output
+import main
+import os, errno
 def print_results(results ,output_file):
     '''
 
@@ -107,6 +151,24 @@ def print_results(results ,output_file):
     # implement your code here
     # don't forget to remove the accent of characters using main.replace_accented(input_str)
     # you should sort results on instance_id before printing
+    
+    if not os.path.exists(os.path.dirname(output_file)):
+        try:
+            os.makedirs(os.path.dirname(output_file))
+        except OSError as exc: # Guard against race condition
+            if exc.errno != errno.EEXIST:
+                raise
+    with open(output_file, "w") as outfile:
+        for key in results.keys():
+            #print(key)
+            #print(results[key])
+            for inst_tuples in results[key]:
+                #print(inst_tuples)
+                lexelt = main.replace_accented(key)
+                instance_id = main.replace_accented(inst_tuples[0])
+                label = main.replace_accented(inst_tuples[1])
+                outfile.write( lexelt + ' ' + instance_id +  ' ' + label + '\n')
+
 
 # run part A
 def run(train, test, language, knn_file, svm_file):
