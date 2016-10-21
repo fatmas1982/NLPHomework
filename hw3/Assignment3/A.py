@@ -2,9 +2,12 @@ from main import replace_accented
 from sklearn import svm
 from sklearn import neighbors
 import nltk
+import re, string
+import sys
 
 # don't change the window size
 window_size = 10
+pattern = re.compile('')
 
 # A.1
 def build_s(data):
@@ -22,6 +25,8 @@ def build_s(data):
         }
 
     '''
+    #sys.stdout.write('#')
+    
     s = {}
     first = True
     for d in data:
@@ -29,9 +34,10 @@ def build_s(data):
         s[d] = []
         for i in range(len(data[d])):
             lexelt = data[d][i]
-            s[d] += nltk.word_tokenize(lexelt[1])[-window_size:]
-            s[d] += nltk.word_tokenize(lexelt[3])[:window_size]
+            s[d] += nltk.word_tokenize(pattern.sub('', lexelt[1]))[-window_size:]
+            s[d] += nltk.word_tokenize(pattern.sub('', lexelt[3]))[:window_size]
         
+        s[d] = set(s[d])
         """
         if first:
             print s[d]
@@ -78,21 +84,17 @@ def vectorize(data, s):
     vectors = {}
     labels = {}
 
+    #sys.stdout.write('.')
+    
     # implement your code here
     for instance in data:
         instance_id = instance[0]
         labels[instance_id] = instance[4]
         words = []
-        before = nltk.word_tokenize(instance[1])[-window_size:]
-        after = nltk.word_tokenize(instance[3])[:window_size]
+        words += nltk.word_tokenize(pattern.sub('', instance[1]))[-window_size:]
+        words += nltk.word_tokenize(pattern.sub('', instance[3]))[:window_size]
         
-        words += [''] * (window_size - len(before)) + before
-        words += after + [''] * (window_size - len(after))
-        
-        if(len(words) != 20):
-            print(words)
-        
-        vectors[instance_id] = [s.count(x) for x in words]
+        vectors[instance_id] = [words.count(x) for x in s]
 
     return vectors, labels
 
@@ -118,6 +120,7 @@ def classify(X_train, X_test, y_train):
     :return: svm_results: a list of tuples (instance_id, label) where labels are predicted by LinearSVC
              knn_results: a list of tuples (instance_id, label) where labels are predicted by KNeighborsClassifier
     '''
+    #sys.stdout.write('.')
 
     svm_results = []
     knn_results = []
